@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from server.services.imap_service import IMAPService
+from services.imap_service import IMAPService
 
 bp = Blueprint('imap', __name__, url_prefix='/api/imap')
 

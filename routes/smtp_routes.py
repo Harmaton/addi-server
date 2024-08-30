@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from server.services.smtp_service import SMTPService
+from services.smtp_service import SMTPService
 
 bp = Blueprint('smtp', __name__, url_prefix='/api/smtp')
 

@@ -1,9 +1,16 @@
 import imaplib
 import email
 from email.header import decode_header
-import os
+from google.cloud import storage
+import uuid
 
 IMAP_SERVER = 'outlook.office365.com'
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+BUCKET_NAME = os.getenv('BUCKET_NAME')
+PROJECT_ID=os.getenv('PROJECT_ID')
 
 class IMAPService:
     @staticmethod
@@ -55,11 +62,20 @@ class IMAPService:
                                 elif "attachment" in content_disposition:
                                     filename = part.get_filename()
                                     if filename:
-                                        # Save attachment
-                                        attachment_path = os.path.join("attachments", filename)
-                                        with open(attachment_path, "wb") as f:
-                                            f.write(part.get_payload(decode=True))
-                                        attachments.append(attachment_path)
+                                        # Generate a unique filename
+                                        unique_filename = f"{uuid.uuid4()}_{filename}"
+                                        
+                                        # Upload attachment to Google Cloud Storage
+                                        storage_client = storage.Client()
+                                        bucket = storage_client.bucket(BUCKET_NAME)
+                                        blob = bucket.blob(f"{sender}/{unique_filename}")
+                                        blob.upload_from_string(
+                                            part.get_payload(decode=True),
+                                            content_type=content_type
+                                        )
+                                        
+                                        # Store the public URL of the uploaded file
+                                        attachments.append(blob.public_url)
                         else:
                             body = email_message.get_payload(decode=True).decode()
                         
@@ -83,6 +99,10 @@ class IMAPService:
                 imap_conn.logout()
 
     @staticmethod
-    def initialize_attachments_directory():
-        # Ensure attachments directory exists
-        os.makedirs("attachments", exist_ok=True)
+    def initialize_google_cloud_storage():
+        try:
+            storage.Client(project=PROJECT_ID)
+            return {"message": "Google Cloud Storage initialized successfully"}
+        except Exception as e:
+            print(f"Error initializing Google Cloud Storage: {str(e)}")
+            return None
