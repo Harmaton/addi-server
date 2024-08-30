@@ -54,3 +54,4 @@ jobs:
             --region ${{ env.REGION }} \
             --set-env-vars "API_URL=${{ secrets.API_URL }}" \
             --allow-unauthenticated
+            --verbosity=debug
